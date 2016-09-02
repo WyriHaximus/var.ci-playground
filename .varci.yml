@@ -6,6 +6,13 @@ ruleset:
     when:
       - body contains "[x] Bug"
       - action = "opened" or action = "reopened"
+  label_bogs:
+    name: "Label issues as bog"
+    events: [ issues ]
+    label: bog
+    when:
+      - body contains "[x] Bog"
+      - action = "opened" or action = "reopened"
 
   missing_version:
     name: "Close bugs with missing version number"
