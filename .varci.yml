@@ -1,51 +1,57 @@
 ruleset:
+
+  remove_invalid:
+    name: "Remove invalid tag when issue re-opened"
+    events: [ issues ]
+    label: -invalid
+    when:
+      - action = "reopened"
+      - filter(labels, "name") has "invalid"
+      
   label_bugs:
     name: "Label issues as bug"
     events: [ issues ]
     label: bug
     when:
-      - body contains "[x] Bug"
-      - action = "opened" or action = "reopened"
+      - action in ["opened", "edited"]
+      - body matches "/\[\s?x\s?\] bug/"
+
   label_bogs:
     name: "Label issues as bog"
     events: [ issues ]
     label: bog
     when:
-      - body contains "[x] Bog"
-      - action = "opened" or action = "reopened"
+      - action in ["opened", "edited"]
+      - body matches "/\[\s?x\s?\] bog/"
 
   missing_version:
     name: "Close bugs with missing version number"
     events: [ issues ]
     close: true
     label: invalid
-    message: >
+    comment: >
       @{{ user.login }}, please re-open once you have added
       the version you are using per our contributing guidelines.
     when:
-      - action = "labelled"
-      - filter(labels, "name") has "bug"
-      - not (body matches "/[0-9]{1,2}\.[0-9]+(\.[0-9]+)?/")
+      - action in ["opened", "reopened"]
+      - body matches "/\[\s?x\s?\] bug/"
+      - not (body matches "/v?[0-9]{1,2}\.[0-9]+(\.[0-9]+)?/")
 
   short_description:
-    name: "Close issues with short descriptions"
-    events: [ issues, pull_request ]
+    name: "Close issues and pull requests with short descriptions"
+    events: [ issues ]
     close: true
     label: invalid
     when: length(body) < 50
-
-  remove_invalid:
-    name: "Remove invalid tag when issue re-opened"
-    events: [ issues, pull_request ]
-    label: -invalid
-    when:
-      - action = "reopened"
-      - filter(labels, "name") has "invalid"
+    comment: >
+      @{{ user.login }}, please re-open once you have added
+      a longer description (must be 50 characters or more).
 
   auto_merge:
     name: "Automatically merge certain pull requests"
-    events: [ pull_request ]
+    events: [ issue_comment ]
     merge: true
     when:
-      - action = "reopened"
-      - filter(labels, "name") has "invalid"
+      - action = "created"
+      - user.login in read("guardians.json", repository.full_name)
+      - body matches "/^LGTM$/"
